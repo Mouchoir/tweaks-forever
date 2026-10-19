@@ -243,9 +243,11 @@ local function HealthBar()
 
 	-- The token comes from the tooltip's caller, or is the mouseover for a world tooltip, never from the tooltip's
 	-- GUID: UnitTokenFromGUID returns a secret token for an NPC under addon restrictions, and no unit API takes one
-	-- from addon code. Players take their class colour (UnitClass is only secret for units that aren't
-	-- player-controlled), others the colour of their reaction, as the name above does. A health bar with no unit is
-	-- a destructible object's.
+	-- from addon code. Players take their class colour, others the colour of their reaction, as the name above does.
+	-- A health bar with no unit is a destructible object's, and so is one whose colour comes back with a secret
+	-- channel: UnitClass is secret while the unit's identity is restricted, and GetClassColor takes that secret from
+	-- addon code and answers a secret colour. The track's shade is arithmetic on it, and the bar is Blizzard's, which
+	-- a secret colour would mark secret.
 	local function Watch(token)
 		unit = UnitExists(token) and token or nil
 		player = unit and UnitIsPlayer(unit)
@@ -258,7 +260,7 @@ local function HealthBar()
 		elseif unit then
 			color = FACTION_BAR_COLORS[UnitReaction(unit, "player")]
 		end
-		if color then
+		if color and ns.Readable(color.r) and ns.Readable(color.g) and ns.Readable(color.b) then
 			r, g, b = color.r, color.g, color.b
 		end
 		Update()
