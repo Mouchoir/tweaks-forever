@@ -97,6 +97,8 @@
 ---@class TFDungeonMaps
 ---@field Floors fun(art: table?, instance: integer): TFInteriorMap[]
 ---@field Inside fun(instanceType: string, instance: integer?, playerMap: integer?, shownMap: integer?): integer?
+---@field FloorsOf fun(art: table?, instances: integer[]): TFInteriorMap[]
+---@field Open fun(uiMapID: integer, instances: integer[]): boolean
 ---@field Floor fun(count: integer, chosen: integer?): integer
 
 ---@class TFPosition
@@ -323,7 +325,7 @@ TweaksForeverCharDB = nil
 ---@field FitButton fun(button: Button, width: number)
 ---@field EscapeCloses fun(frame: Frame)
 ---@field Navigate fun(uiMapID: integer, x: number, y: number, title: string)
----@field NavigateHint fun(): string
+---@field NavigateHint fun(shift: boolean?): string
 ---@field EntranceHint fun(): string? the grey line about Shortest Path Forever on a dungeon entrance (Integrations/Companions.lua)
 ---@field Family ForeverFamilyAPI the shared Forever addons module (UI/ForeverFamily.lua)
 ---@field WHATS_NEW string
