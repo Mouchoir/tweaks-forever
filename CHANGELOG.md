@@ -12,6 +12,9 @@ optional `### For addon authors` subsection after a version's player bullets.
 
 ## [Unreleased]
 
+## [1.0.10] - 2026-11-04
+
+
 - **A warning before you pull aggro.** In a group, a chat line tells you when your threat on your target has passed the tank's, so you can stop before the mob turns on you. It warns once, then again only after you drop back below the tank or change target. Turn it off under Interface in Tweaks' settings; nameplates coloured by threat are the game's own Nameplates option.
 
 ## [1.0.9] - 2026-11-04
