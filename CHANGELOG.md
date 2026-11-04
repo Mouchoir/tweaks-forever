@@ -12,6 +12,8 @@ optional `### For addon authors` subsection after a version's player bullets.
 
 ## [Unreleased]
 
+- **Screenshot art keeps its reviewed build.** The renderer records its UI-art pin independently of shared tooling updates, and changing it requires fresh screenshots.
+
 ## [1.0.5] - 2026-11-03
 
 - **Buttons and dialogs keep the Forever look.** The shared asset checker now rejects legacy dialog templates and backdrop globals in runtime UI and in the screenshot renderers, not only direct texture references, so the old chrome cannot creep back in through a helper. Adopted from Forever Core.
