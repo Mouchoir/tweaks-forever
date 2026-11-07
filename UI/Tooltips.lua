@@ -323,10 +323,10 @@ end
 -- pre-call drops it before it is added, which Blizzard's TooltipDataProcessor allows insecure callers, and the
 -- post-call edits GameTooltip's own left-line font strings in place with SetText and SetTextColor.
 --
--- Secret values: only a player's tooltip is touched. GetPlayerInfoByGUID takes a secret GUID and returns
--- nothing for a unit that isn't a player; its returns are not documented as secret, and a player's identity (name,
--- race, class) is exempt from the identity restriction, so the class and race it returns are ordinary strings and
--- so are the player's lines. An NPC's lines are left exactly as Blizzard wrote them.
+-- Secret values: only a player's tooltip is touched. GetPlayerInfoByGUID takes a secret GUID from addon code and
+-- returns nothing for a unit that isn't a player, but for a player whose identity is restricted its class and race
+-- come back secret, and so do the tooltip's lines. Such a player's lines, a line whose text is secret, and an
+-- NPC's lines are left exactly as Blizzard wrote them.
 local function UnitLines()
 	-- The player tooltip being built: its data, class and race, level, whether the level line has gone by, and
 	-- whether the class line was dropped.
@@ -338,10 +338,10 @@ local function UnitLines()
 			return
 		end
 		building = nil
-		-- secret-ok: GetPlayerInfoByGUID takes a secret GUID, and a player's class and race are not secret (above)
+		-- secret-ok: GetPlayerInfoByGUID takes a secret GUID; what it returns is read only once readable (below)
 		className, classFile, race = GetPlayerInfoByGUID(data.guid)
 		level = LevelText(tooltip)
-		if classFile then
+		if ns.Readable(className) and ns.Readable(classFile) and ns.Readable(race) then
 			building, passed, dropped = data, false, false
 		end
 	end)
@@ -354,7 +354,8 @@ local function UnitLines()
 		if not info or info.tooltipData ~= building then
 			return
 		end
-		local text = line.leftText
+		-- A secret line is neither the level line nor the class line.
+		local text = ns.Readable(line.leftText)
 		if type(text) ~= "string" then
 			return
 		end
