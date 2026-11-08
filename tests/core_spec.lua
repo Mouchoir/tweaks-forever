@@ -1,4 +1,20 @@
 -- Defaults and the shared namespace must be ready before any feature initializer runs.
+-- Core/SafeCall.lua installs its error handler and event frame once per addon; this stand-in client already counts
+-- this copy as installed, so the journal builds no frame and the frames here keep their order.
+ForeverErrorJournal = { installed = { TweaksForever = true } }
+
+-- Each scenario runs the shared files in its own environment. The chunk is parsed once: executing it again still
+-- builds every local and table fresh, and parsing the same file five times only measured the parser.
+local chunks = {}
+local function Chunk(path)
+	local chunk = chunks[path]
+	if not chunk then
+		chunk = assert(loadfile(path))
+		chunks[path] = chunk
+	end
+	return chunk
+end
+
 local function Load(saved)
 	local frames, errors, callbacks = {}, {}, {}
 	local env = setmetatable({
@@ -35,8 +51,9 @@ local function Load(saved)
 		end,
 	}, { __index = _G })
 	local ns = {}
-	setfenv(assert(loadfile("Core/SafeCall.lua")), env)("TweaksForever", ns)
-	setfenv(assert(loadfile("Core/Core.lua")), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/SafeCall.lua"), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/Log.lua"), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/Core.lua"), env)("TweaksForever", ns)
 	ns.Feature({ key = "enabled", default = true })
 	ns.Feature({ key = "disabled", default = false })
 	ns.Feature({ key = "gearMark", default = "strip" })
@@ -130,8 +147,9 @@ do -- A `polestar` conflict reads Polestar's own setting: on, or any choice but 
 		end,
 	}, { __index = _G })
 	local ns = {}
-	setfenv(assert(loadfile("Core/SafeCall.lua")), env)("TweaksForever", ns)
-	setfenv(assert(loadfile("Core/Core.lua")), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/SafeCall.lua"), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/Log.lua"), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/Core.lua"), env)("TweaksForever", ns)
 	local listeners = {}
 	env.Polestar.On = function(message, fn)
 		listeners[#listeners + 1] = message
@@ -204,8 +222,9 @@ do -- An `openmap` conflict reads OpenMap's world map option while OpenMap is lo
 		end,
 	}, { __index = _G })
 	local ns = {}
-	setfenv(assert(loadfile("Core/SafeCall.lua")), env)("TweaksForever", ns)
-	setfenv(assert(loadfile("Core/Core.lua")), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/SafeCall.lua"), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/Log.lua"), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/Core.lua"), env)("TweaksForever", ns)
 	ns.db = { coords = true, reveal = true }
 	ns.Feature({ key = "coords", default = true, conflicts = { { openmap = "coords" } } })
 	ns.Feature({ key = "reveal", default = false, conflicts = { { openmap = "unexplored" } } })
@@ -272,8 +291,9 @@ do -- A `naowh` conflict reads Naowh Forever's QoL switch while its QoL module i
 		},
 	}, { __index = _G })
 	local ns = {}
-	setfenv(assert(loadfile("Core/SafeCall.lua")), env)("TweaksForever", ns)
-	setfenv(assert(loadfile("Core/Core.lua")), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/SafeCall.lua"), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/Log.lua"), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/Core.lua"), env)("TweaksForever", ns)
 	ns.Feature({ key = "fastLoot", default = true, conflicts = { { naowh = "fastLoot" } } })
 	ns.Feature({ key = "sell", default = true, conflicts = { { naowh = "sellJunk" } } })
 	ns.RefreshConflicts()
@@ -319,8 +339,9 @@ do -- Loaded at login, Polestar's own setting changes refresh the conflicts at o
 		end,
 	}, { __index = _G })
 	local ns = {}
-	setfenv(assert(loadfile("Core/SafeCall.lua")), env)("TweaksForever", ns)
-	setfenv(assert(loadfile("Core/Core.lua")), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/SafeCall.lua"), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/Log.lua"), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/Core.lua"), env)("TweaksForever", ns)
 	ns.Feature({ key = "fastLoot", default = true, conflicts = { { polestar = "qol.fastLoot" } } })
 	assert(ns.features[1].conflicts[1].addon == "Polestar" and ns.features[1].conflicts[1].title == "Polestar")
 	frames[2].callback()
@@ -341,7 +362,7 @@ do
 			return { RegisterEvent = function() end, SetScript = function() end }
 		end,
 	}, { __index = _G })
-	setfenv(assert(loadfile("Core/Core.lua")), env)("TweaksForever", ns)
+	setfenv(Chunk("Core/Core.lua"), env)("TweaksForever", ns)
 	local button = { text = 40 }
 	function button:GetTextWidth()
 		return self.text
