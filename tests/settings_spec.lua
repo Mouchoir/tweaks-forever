@@ -47,6 +47,11 @@ end
 local opened
 local canvas
 local vertical
+-- Calls to the client's own restricted settings opener.
+local opens = 0
+-- [function] = how many secure delegates the settings built around it. Blizzard data the secure row build reads is
+-- written through one, never by our code directly (#433).
+local delegated = {}
 
 local env = setmetatable({
 	Settings = {
@@ -93,6 +98,7 @@ local env = setmetatable({
 			local options = { min = minValue, max = maxValue, step = step }
 			function options:SetLabelFormatter(_, formatter)
 				self.formatter = formatter
+				self.formatterSet = true
 			end
 			return options
 		end,
@@ -107,13 +113,31 @@ local env = setmetatable({
 			registered[#registered + 1] = { category = category, initializer = initializer }
 		end,
 		RegisterAddOnCategory = function() end,
-		OpenToCategory = function(id)
-			opened = id
+		-- The restricted route: the client refuses this call from addon code and blames the addon, so reaching it
+		-- fails the spec (cjber/forever-core#333).
+		OpenToCategory = function()
+			error("the settings opened through Settings.OpenToCategory, which the client refuses from addon code")
 		end,
 	},
-	CreateSettingsButtonInitializer = function(name, _, _, _, addSearchTags)
+	-- The shared opener wraps the client's own function in a secure delegate and calls that (Core/OpenSettings.lua).
+	C_SettingsUtil = {
+		OpenSettingsPanel = function(categoryID)
+			opens = opens + 1
+			opened = categoryID
+		end,
+	},
+	CreateSecureDelegate = function(fn)
+		delegated[fn] = (delegated[fn] or 0) + 1
+		return function(...)
+			return fn(...)
+		end
+	end,
+	InCombatLockdown = function()
+		return false
+	end,
+	CreateSettingsButtonInitializer = function(name, _, click, _, addSearchTags)
 		assert(addSearchTags == false, "index buttons stay out of search")
-		return { kind = "button", name = name }
+		return { kind = "button", name = name, click = click }
 	end,
 	SettingsPanel = {
 		HookScript = function(_, script, fn)
@@ -227,6 +251,9 @@ ns.Report = {
 assert(loadfile("Locales/enUS.lua"))("TweaksForever", ns)
 -- A packaged German client: features declare English, and the settings show the translation where there is one.
 ns.L["Bags"], ns.L["Repair"], ns.L["Repairs."] = "Taschen", "Reparieren", "Repariert."
+-- The shared opener is loaded first, as the TOC does: the settings page asks it, not Settings.OpenToCategory.
+setfenv(assert(loadfile("Core/OpenSettings.lua")), env)("TweaksForever", ns)
+assert(ns.OpenSettingsPanel, "the shared settings opener is loaded")
 setfenv(assert(loadfile("UI/Settings.lua")), env)("TweaksForever", ns)
 
 -- Rows per page, in order: each subpage's settings, then the index's button to it.
@@ -246,6 +273,25 @@ assert(canvas and canvas.name == "Forever addons" and canvas.parent.name == "Twe
 assert(canvas.frame.kind == "family panel" and canvas.frame.db == ns.db and canvas.frame.current == "TweaksForever")
 assert(canvas.frame.L == nil, "ns.Family is already bound to Tweaks' L (ForeverFamily.For)")
 assert(registered[8].initializer.name == "Forever addons", "the index opens it like any other subpage")
+
+-- The index's Open buttons, the Forever addons one included, open their page through the client's own function,
+-- carried by one secure delegate. Settings.OpenToCategory is Blizzard's Lua around the restricted call, which the
+-- client refuses from addon code (cjber/forever-core#333).
+do
+	local buttons = 0
+	for _, entry in ipairs(registered) do
+		local initializer = entry.initializer
+		if initializer.kind == "button" then
+			buttons = buttons + 1
+			local before = opens
+			initializer.click()
+			assert(opens == before + 1, initializer.name .. ": opened through the client's own opener")
+			assert(opened == initializer.name, initializer.name .. ": on its own page")
+		end
+	end
+	assert(buttons == 4, "the index has a button per subpage and the Forever addons page")
+	assert(delegated[env.C_SettingsUtil.OpenSettingsPanel] == 1, "every page opens through one secure delegate")
+end
 
 -- A failing shared panel (another addon's newer copy) leaves the rest of the settings and /tweaks working.
 do
@@ -280,6 +326,10 @@ local function Modifiable(initializer)
 end
 assert(Modifiable(repair) and not repair.indented, "conflict-free rows stay modifiable")
 assert(guildRepair.indented and guildRepair.evaluate == "TweaksForever_repair", "a child row sits under its parent")
+assert(
+	delegated[guildRepair.Indent],
+	"the row indents through a secure delegate, so Blizzard's row build reads no taint of ours (#433)"
+)
 assert(Modifiable(guildRepair), "a child row is modifiable while its parent is on")
 ns.db.repair = false
 assert(not Modifiable(guildRepair) and Modifiable(repair), "a child row greys out with its parent off")
@@ -298,6 +348,20 @@ assert(
 	"a slider is a number setting"
 )
 assert(size.options.min == 50 and size.options.max == 200 and size.options.step == 5, "the slider takes its bounds")
+assert(
+	size.options.formatterSet and type(size.options.formatter) == "function",
+	"without the gamepad UI the slider keeps its percentage label formatter"
+)
+assert(
+	size.options.formatter(50) == "50%"
+		and size.options.formatter(75.4) == "75%"
+		and size.options.formatter(75.5) == "76%",
+	"the percentage formatter rounds to the nearest whole number"
+)
+assert(
+	delegated[env.Settings.CreateSliderOptions] and delegated[env.Settings.CreateSliderInitializer],
+	"the slider's Blizzard row data is built through secure delegates (#433)"
+)
 
 -- /tweaks opens the settings; /tweaks report shows the report instead.
 env.SlashCmdList.TWEAKSFOREVER("")
@@ -346,6 +410,28 @@ do
 	)
 	local choice = Choice(registered)
 	assert(choice and choice.kind == "slider", "with the gamepad UI on a choice is a slider")
+	local child
+	for _, entry in ipairs(registered) do
+		local rowSetting = entry.initializer.setting
+		if rowSetting and rowSetting.variable == "TweaksForever_guildRepair" then
+			child = entry.initializer
+		end
+	end
+	assert(
+		child and child.indented and delegated[child.Indent],
+		"with the gamepad UI on a nested row still indents through a secure delegate (#433)"
+	)
+	local numberSlider
+	for _, entry in ipairs(registered) do
+		local rowSetting = entry.initializer.setting
+		if rowSetting and rowSetting.variable == "TweaksForever_iconSize" then
+			numberSlider = entry.initializer
+		end
+	end
+	assert(
+		numberSlider and numberSlider.options.formatter == nil and numberSlider.options.formatterSet == nil,
+		"with the gamepad UI on the number slider has no label formatter of ours (#433)"
+	)
 	local setting = choice.setting
 	assert(setting.proxy and setting.varType == "number", "the choice is a number proxy setting")
 	assert(setting.variable == "TweaksForever_gearMark" and setting.name == "Mark", "it keeps its variable and name")
@@ -354,13 +440,20 @@ do
 		choice.options.min == 1 and choice.options.max == 3 and choice.options.step == 1,
 		"one step per option, from 1 to the last"
 	)
+	-- The option names are text in the row's tooltip: a formatter of ours would run inside Blizzard's secure row
+	-- build and taint the gamepad rows (#433). The names stay visible, in slider order; no number replaces them.
 	assert(
-		choice.options.formatter(1) == "Strip" and choice.options.formatter(2) == "Border",
-		"the labels are the options"
+		choice.options.formatter == nil and choice.options.formatterSet == nil,
+		"the row build runs no label formatter of ours (#433)"
+	)
+	assert(type(choice.tooltip) == "string", "the choice's tooltip is text, not a function (#424)")
+	assert(
+		choice.tooltip:find("The choices, in order: Strip, Border, Dots.", 1, true),
+		"the option names are in the tooltip, in slider order (#433)"
 	)
 	assert(
-		choice.options.formatter(2.4) == "Border" and choice.options.formatter(3) == "Dots",
-		"the value rounds to an index"
+		delegated[env.Settings.CreateSliderOptions] and delegated[env.Settings.CreateSliderInitializer],
+		"the choice's Blizzard row data is built through secure delegates (#433)"
 	)
 	ns.db.gearMark = "dots"
 	assert(setting.getValue() == 3, "the saved string maps to its index")
