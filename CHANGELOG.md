@@ -12,6 +12,10 @@ optional `### For addon authors` subsection after a version's player bullets.
 
 ## [Unreleased]
 
+### For addon authors
+
+- **`TweaksForever.API` is listed by `ForeverCore.APIKit.Addons()`.** On ForeverCore 1.3.2 or later the addon publishes its API table at load, so a suite-wide reader finds it and can subscribe through it. The API's own `version` and `minor` do not change (#490).
+
 ## [2.6.2] - 2026-11-11
 
 - **Forever Core now installs alongside it.** Forever Core is on CurseForge, so the CurseForge app installs and updates it with this addon instead of the addon carrying its own copy. On Wago, install Forever Core from its own page.
