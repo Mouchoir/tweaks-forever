@@ -21,6 +21,7 @@ FOREVER_CORE=../forever-core python3 tools/forever_sim/fetch.py && FOREVER_CORE=
 ruff check tools && ruff format --check tools
 uvx ty@0.0.83 check tools --extra-search-path . --extra-search-path tools
 python3 tools/check_generated.py --offline # omit --offline to fetch missing pinned inputs
+python3 tools/forever_tools/credits.py --check # Data/Credits.lua and both thanks blocks are current (WFA-31)
 python3 tools/changelog.py --check
 python3 tools/check_screenshots.py   # an image older than its sources; --record after tools/screenshots.py
 python3 tools/check_menu_scroll.py # menus built from a list scroll (WFA-36); CI runs it in core-shared
@@ -30,7 +31,7 @@ python3 tools/repo_rules.py   # rules no linter covers; CI runs it in project-ru
 
 CI's `package` job builds the zip with the release's packager without uploading (`-d -z`) and runs
 `python3 tools/check_package.py` on its output: every loaded file ships, no development folder does, a licence file and
-THIRD_PARTY.md ship with README's `## Credits` and THIRD_PARTY's `## Ideas and contributors` (WFA-10, WFA-31), and the
+THIRD_PARTY.md ship with README's `## Credits` and THIRD_PARTY's `## Players` (WFA-10, WFA-31), and the
 specs pass on the packaged files.
 
 The same gate CI runs, plus actionlint, zizmor and gitleaks on the workflows and history.
