@@ -1,31 +1,43 @@
 {
-  "input_digest": "727bcf83af95dd742d6c3e6121f0b938833279411cf6b08851cb6a41b02336dc",
-  "runtime_sha256": "727bcf83af95dd742d6c3e6121f0b938833279411cf6b08851cb6a41b02336dc",
-  "candidate": "81e9374afcaa2b4dfd3de42066eb443dcecee9e047151005485132cfe5592045",
+  "input_digest": "3fe7e65ea59a02dad68ee6ea5820d06031d081170a7c70d1c941e63ae4514b1a",
+  "runtime_sha256": "3fe7e65ea59a02dad68ee6ea5820d06031d081170a7c70d1c941e63ae4514b1a",
+  "candidate": "6d1df9dda1b4c3f875dbae1b15b56cc029e0bb9f5ba2498336ace35d3ba2e650",
   "tested_artifact": "release-package",
-  "client_build": "1.60.1.70888 (Interface 16001)",
-  "source_commit": "9a470b77afabcb3c262aa8094895c92c1efb57fe",
-  "notes": "Recorded on Hel Io in the player's live client from the packager's release build of this commit (TweaksForever and LibAHTab from a local BigWigs packager -d -z run; --compare-package equivalent). Every other Forever addon's 1.9.0 sync build was loaded in the same session. The only BugGrabber entries this session were the recorder's own over-long /run lines.",
+  "client_build": "1.60.1.70938 (Interface 16001)",
+  "source_commit": "30f675432e8ac9f478ddc6df3eb749507da7692a",
+  "notes": "Recorded on Hel Io in the headless client (forever-core tools/headless) from the packager's release build of this commit (local BigWigs packager -d -z; visual_proof --compare equivalent), with the store ForeverCore v1.9.0 and every other installed addon loaded. The before image is the store Tweaks 2.7.0 in the same client earlier the same day.",
   "flows": [
     {
-      "name": "Tweaks' settings open on ForeverCore 1.9.0",
+      "name": "No chat errors at login with both chat options off",
       "steps": [
-        "Install the candidate with the store ForeverCore v1.9.0 and /reload",
-        "Print every Forever addon's loaded version into a chat tab with no channels: store ForeverCore v1.9.0 plus each 1.9.0 sync build, all loaded, and BugGrabber shows no addon errors this session",
-        "Type /tweaks",
-        "The game's Options open on the Tweaks Forever page with its group buttons and no action-blocked message"
+        "Install the candidate in place of the store Tweaks 2.7.0 and log in",
+        "/reload, then print Tweaks' and ForeverCore's versions, this BugGrabber session's error count and both chat settings into the Agent chat tab",
+        "Tweaks v2.7.0-8-g30f6754 loaded on ForeverCore v1.9.0; chatClassLevels and chatWhisperTabs false; 0 session errors, 0 from Tweaks; no 'too many errors' warning in chat (2.7.0 logged about 100 of each error per login)"
+      ],
+      "result": "pass"
+    },
+    {
+      "name": "No chat errors at login with both chat options on",
+      "steps": [
+        "Set chatClassLevels and chatWhisperTabs to true and /reload",
+        "Print the same lines: both settings true, 0 session errors, 0 from Tweaks",
+        "Set both back to false and /reload: still no Lua errors"
       ],
       "result": "pass"
     }
   ],
   "images": [
     {
-      "url": "https://gist.githubusercontent.com/cjber/627a1b4cf36d973bb26ba262c81eb601/raw/67bd0b623f26040eed9f66dd363a477dbb684579/sync190-tweaks-settings.png",
-      "sha256": "43f0e687f947733819e6c8cee69ea12798e6886be0d7897ffd5df5ea1e921b7e"
+      "url": "https://gist.githubusercontent.com/cjber/84b3ebdedec00d03952fd1f668c200f8/raw/e3a9ec5e2506b1ab3619cd7d88cfd3391e1e90b3/551-before-270.png",
+      "sha256": "59118593c740ab3410606f53ecf56fadbcd75927a0fb93761cc91a7cfe3bf653"
     },
     {
-      "url": "https://gist.githubusercontent.com/cjber/627a1b4cf36d973bb26ba262c81eb601/raw/67bd0b623f26040eed9f66dd363a477dbb684579/sync190-versions.png",
-      "sha256": "9731b84977a7daf94152f9129b9ea996b4c467006f822f7acc430332fa8f08ec"
+      "url": "https://gist.githubusercontent.com/cjber/84b3ebdedec00d03952fd1f668c200f8/raw/e3a9ec5e2506b1ab3619cd7d88cfd3391e1e90b3/551-after-271-options-off.png",
+      "sha256": "7adeb8767dd8bde64e9c2c510819b88a7f09daa6344568423e7b190fa8f725c5"
+    },
+    {
+      "url": "https://gist.githubusercontent.com/cjber/84b3ebdedec00d03952fd1f668c200f8/raw/e3a9ec5e2506b1ab3619cd7d88cfd3391e1e90b3/551-after-271-options-on.png",
+      "sha256": "8ba91f83bce291828940d5ae3c0cbaa1ae7b96a1941f193bd3d407cabedfc82d"
     }
   ]
 }
